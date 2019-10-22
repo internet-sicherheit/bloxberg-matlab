@@ -43,18 +43,25 @@ classdef MatlabBlockbergAPI
         function MBBAPI = createHash(MBBAPI, filename)
             disp('Creating Hash...');
             
-%             fileID = fopen(filename, 'r');
-%             bits = fread(fileID, 'ubit1', 'ieee-le');
-%             
-%             sha256hasher = System.Security.Cryptography.SHA256Managed;
-%             sha256 = uint8(sha256hasher.ComputeHash(bits));
-%             MBBAPI.checksum = lower(convertCharsToStrings(dec2hex(sha256)));
-%             disp(['Created hash:  ' MBBAPI.checksum]);
+            import java.security.*;
+            import java.math.*;
+
+            fileID = fopen(filename, 'r');
+
+            byte = fread(fileID, 'ubit8', 'ieee-le');
+
+            sha256 = MessageDigest.getInstance('SHA-256');
+            hash = sha256.digest(byte);
+            bigInteger = BigInteger(1, hash);
+            sha256Hash = char(bigInteger.toString(16))
+            MBBAPI.checksum = sha256Hash;
             
-            sha256hasher = System.Security.Cryptography.SHA256Managed;
-            sha256 = uint8(sha256hasher.ComputeHash(uint8(filename))); %consider the string as 8-bit characters
-            MBBAPI.checksum = lower(convertCharsToStrings(dec2hex(sha256)));
             disp(['Created hash:  ' MBBAPI.checksum]);
+            
+%             sha256hasher = System.Security.Cryptography.SHA256Managed;
+%             sha256 = uint8(sha256hasher.ComputeHash(uint8(filename))); %consider the string as 8-bit characters
+%             MBBAPI.checksum = lower(convertCharsToStrings(dec2hex(sha256)));
+            
         end
         
         function MBBAPI = certifyData(MBBAPI)
