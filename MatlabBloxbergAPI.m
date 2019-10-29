@@ -1,5 +1,5 @@
 classdef MatlabBloxbergAPI
-    % MATLABBLOXBERGAPI An API to interact with the Bloxberg Blockchain.
+    % MATLABBLOXBERGAPI An API to interact with the Bloxberg blockchain.
     % This class provides functions to verify and certify science data
     % with the Bloxberg Blockchain.
     
@@ -43,22 +43,21 @@ classdef MatlabBloxbergAPI
             MBBAPI = MBBAPI.certifyData();
             MBBAPI = MBBAPI.generateCertificate();
             MBBAPI = MBBAPI.createCertificate();
-            
             disp('MatlabBloxbergAPI closed.');
         end
         
         function MBBAPI = createHash(MBBAPI, filename)
         % CREATEHASH creates a Hash from a file.
-        % This function creates a SHA-256 hash from the resultdata
+        % This function creates a SHA-256 hash from the resultfile
         % that the author has inputed.
         
             disp('Creating Hash...');
             
-            % import java libs
+            % import java libs (needed for hash function)
             import java.security.*;
             import java.math.*;
 
-            % open the resultdata file with read rights
+            % opens the resultfile with read rights
             fileID = fopen(filename, 'r');
             
             % provides a SHA-256 instance
@@ -93,13 +92,13 @@ classdef MatlabBloxbergAPI
             MBBAPI.checksum = sha256Hash;
             
             disp(['    Created hash:  ' MBBAPI.checksum]);   
-            disp(['    Runtime: ' num2str(timeElapsed) ' seconds']);
+            disp(['    Runtime:  ' num2str(timeElapsed) ' seconds']);
             
         end
         
         function MBBAPI = certifyData(MBBAPI)
-        % CERTIFYDATA certifies the resultdata.
-        % This function certifies the resultdata with the SHA-256 hash
+        % CERTIFYDATA certifies the resultflie.
+        % This function certifies the resultfile with the SHA-256 hash
         % created before.
         
             disp('Certify data...');
@@ -107,54 +106,54 @@ classdef MatlabBloxbergAPI
             % creating a timestamp of the current system time
             timestampString = num2str(floor(posixtime(datetime('now'))));
             
-            % bilding a json object out of structs
+            % bilding a json object out of structs that Bloxberg requires
             certifyOptionsStruct = struct('checksum', MBBAPI.checksum, 'authorName', MBBAPI.authorName, 'timestampString', timestampString);
             certifyStruct = struct('certifyVariables', certifyOptionsStruct);
 
             % setting up weboptions
             options = weboptions('RequestMethod', 'post', 'ArrayFormat','json', 'Timeout', 3000);
-            % writing the request to Bloxberg and safing the result in certifyData
+            % writing the request to Bloxberg and safing the response (json object) in certifyData
             certifiyData = webwrite(MBBAPI.URL_CERTIFY, certifyStruct, options);
             
             %safing the transaction hash from the response to txHash
             MBBAPI.txHash = certifiyData.txReceipt.transactionHash;
 
             disp(['    ' certifiyData.msg]);
-            disp(['    txHash: ' certifiyData.txReceipt.transactionHash]);
+            disp(['    Transaction hash:  ' certifiyData.txReceipt.transactionHash]);
         end
         
         function MBBAPI = generateCertificate(MBBAPI)
         % GENERATECERTIFICATE generates a certificate.
-        % This function generates certification file for the resultdata as
+        % This function generates a certificationfile for the resulfile as
         % a pdf.
         
             disp('Generate certificate...');
             
-            % bilding a json object out of structs
+            % bilding a json object out of structs that Bloxberg requires
             verifyOptionsStruct = struct('transactionHash', MBBAPI.txHash);
             verifyStruct = struct('certificateVariables', verifyOptionsStruct);
             
             % setting up weboptions
             options = weboptions('RequestMethod', 'post', 'ArrayFormat','json', 'Timeout', 10000);
 
-            % writing the request to Bloxberg and safing the response in
-            % getGeneratedCertificate (bytecode of the PDF certificate)
-            getGeneratedCertificate = webwrite(MBBAPI.URL_VERTIFY, verifyStruct, options);
+            % writing the request to Bloxberg and safing the response 
+            % (pdf-file) in generatedCertificate
+            generatedCertificate = webwrite(MBBAPI.URL_VERTIFY, verifyStruct, options);
             
             % safing the bytecode of the PDF certificate to pdfData
-            MBBAPI.pdfData = convertCharsToStrings( char(getGeneratedCertificate) );
+            MBBAPI.pdfData = convertCharsToStrings( char(generatedCertificate) );
         end
         
         function MBBAPI = createCertificate(MBBAPI)
         % CREATECERTIFICATE creates a certificate.
-        % This function creates a PDF certificate out of the bytecode that
-        % has been saved before.
+        % This function creates a PDF certificate out of the response from
+        % Bloxberg that has been safed in pdfData before.
         
             % creates the PDF file
             fileID = fopen([MBBAPI.certificateOutputPath '\' MBBAPI.certificateName], 'w');
             % Get the bytecode from the pdfData
             bytes = (unicode2native(MBBAPI.pdfData, 'ISO-8859-1'));
-            % writing the bytecode the the PDF file
+            % writing the bytecode to the PDF file
             fwrite(fileID, bytes, 'uint8');
             fclose(fileID);
 
