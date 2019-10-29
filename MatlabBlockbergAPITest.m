@@ -1,1 +1,0 @@
-MBB = MatlabBlockbergAPI('Hans Franz', 'matlab.mat', 'C:\Users\Dominik\Desktop', 'mypdf9.pdf');
