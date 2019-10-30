@@ -3,52 +3,46 @@ classdef MatlabBloxbergAPI
     % This class provides functions to verify and certify science data
     % with the Bloxberg Blockchain.
     
-    properties(Constant = true)
-        URL_CERTIFY = 'https://certify.bloxberg.org/certifyData';           % Constant for the certify URL of Bloxberg
-        URL_VERTIFY = 'https://certify.bloxberg.org/generateCertificate';   % Constant for the verify URL of Bloxberg
-    end
-    
     properties(GetAccess = 'private', SetAccess = 'private')
+        url_certify             % Constant for the certify URL of Bloxberg
+        url_vertify             % Constant for the verify URL of Bloxberg
+        
         authorName              % Name of the author
         timestamp               % Timestamp in milliseconds
         
         buffersize              % Size of the buffer for hash calculation
-  
-        matlabFile              % Resultfile that the author wants to certify (<filename.mat>)
+ 
         checksum                % Hash of the resultfile
         
         txHash                  % Transaction hash that is recived from Bloxberg
-        
-        certificateOutputPath   % Outputpath of the certificate
-        certificateName         % Name of the certificate
-        pdfData                 % The recived PDF bytecode from Bloxberg
+        pdfData                 % PDF-bytecode recived from Bloxberg
     end
     
     methods
-        
-         function MBBAPI = MatlabBloxbergAPI(name, matlabFile, certificateOutputPath, certificateName, buffersize)
+        function MBBAPI = MatlabBloxbergAPI(varargin)
          % MATLABBLOXBERGAPI Constructor of the MatlabBloxbergAPI class.
          % This function create an object of the API.
     
-            disp('Initialize MatlabBloxbergAPI...');
-             
-            MBBAPI.authorName = name; 
-            MBBAPI.matlabFile = matlabFile;
-            MBBAPI.certificateOutputPath = certificateOutputPath;
-            MBBAPI.certificateName = certificateName;
-            MBBAPI.buffersize = buffersize;
-            
-            % called methods to certify and verify the resultfile
-            MBBAPI = MBBAPI.createHash(MBBAPI.matlabFile);
-            MBBAPI = MBBAPI.certifyData();
-            MBBAPI = MBBAPI.generateCertificate();
-            MBBAPI = MBBAPI.createCertificate();
-            disp('MatlabBloxbergAPI closed.');
+            if nargin == 2
+                disp('Initialize MatlabBloxbergAPI...');
+                MBBAPI.authorName = varargin{1}; 
+                MBBAPI.buffersize = varargin{2};
+                MBBAPI.url_certify = 'https://certify.bloxberg.org/certifyData';
+                MBBAPI.url_vertify = 'https://certify.bloxberg.org/generateCertificate';
+            elseif nargin == 4
+                disp('Initialize MatlabBloxbergAPI...');
+                MBBAPI.authorName = varargin{1}; 
+                MBBAPI.buffersize = varargin{2};
+                MBBAPI.url_certify = varargin{3};
+                MBBAPI.url_vertify = varargin{4};
+            else
+                disp('Wrong number of arguments.');
+            end
         end
         
         function MBBAPI = createHash(MBBAPI, filename)
         % CREATEHASH creates a Hash from a file.
-        % This function creates a SHA-256 hash from the resultfile
+        % This function creates a SHA-256 hash from the given file
         % that the author has inputed.
         
             disp('Creating Hash...');
@@ -93,13 +87,13 @@ classdef MatlabBloxbergAPI
             
             disp(['    Created hash:  ' MBBAPI.checksum]);   
             disp(['    Runtime:  ' num2str(timeElapsed) ' seconds']);
-            
         end
         
-        function MBBAPI = certifyData(MBBAPI)
-        % CERTIFYDATA certifies the resultflie.
-        % This function certifies the resultfile with the SHA-256 hash
-        % created before.
+        function MBBAPI = certifyData(MBBAPI, filename)
+        % CERTIFYDATA certifies the given file.
+        % This function certifies the file with the SHA-256 hash.
+        
+            MBBAPI = createHash(MBBAPI, filename);
         
             disp('Certify data...');
             
@@ -113,18 +107,18 @@ classdef MatlabBloxbergAPI
             % setting up weboptions
             options = weboptions('RequestMethod', 'post', 'ArrayFormat','json', 'Timeout', 3000);
             % writing the request to Bloxberg and safing the response (json object) in certifyData
-            certifiyData = webwrite(MBBAPI.URL_CERTIFY, certifyStruct, options);
+            certifiyData = webwrite(MBBAPI.url_certify, certifyStruct, options);
+            
+            disp(['    ' certifiyData.msg]);
+            disp(['    Transaction hash:  ' certifiyData.txReceipt.transactionHash]);
             
             %safing the transaction hash from the response to txHash
             MBBAPI.txHash = certifiyData.txReceipt.transactionHash;
-
-            disp(['    ' certifiyData.msg]);
-            disp(['    Transaction hash:  ' certifiyData.txReceipt.transactionHash]);
         end
         
-        function MBBAPI = generateCertificate(MBBAPI)
+        function generateCertificate(MBBAPI, certificateOutputPath, certificateName)
         % GENERATECERTIFICATE generates a certificate.
-        % This function generates a certificationfile for the resulfile as
+        % This function generates a certificationfile for the given file as
         % a pdf.
         
             disp('Generate certificate...');
@@ -138,26 +132,28 @@ classdef MatlabBloxbergAPI
 
             % writing the request to Bloxberg and safing the response 
             % (pdf-file) in generatedCertificate
-            generatedCertificate = webwrite(MBBAPI.URL_VERTIFY, verifyStruct, options);
+            generatedCertificate = webwrite(MBBAPI.url_vertify, verifyStruct, options);
             
             % safing the bytecode of the PDF certificate to pdfData
             MBBAPI.pdfData = convertCharsToStrings( char(generatedCertificate) );
+            
+            createCertificate(MBBAPI, certificateOutputPath, certificateName);
         end
         
-        function MBBAPI = createCertificate(MBBAPI)
+        function createCertificate(MBBAPI, certificateOutputPath, certificateName)
         % CREATECERTIFICATE creates a certificate.
         % This function creates a PDF certificate out of the response from
-        % Bloxberg that has been safed in pdfData before.
+        % Bloxberg.
         
             % creates the PDF file
-            fileID = fopen([MBBAPI.certificateOutputPath '\' MBBAPI.certificateName], 'w');
+            fileID = fopen([certificateOutputPath '\' certificateName], 'w');
             % Get the bytecode from the pdfData
             bytes = (unicode2native(MBBAPI.pdfData, 'ISO-8859-1'));
             % writing the bytecode to the PDF file
             fwrite(fileID, bytes, 'uint8');
             fclose(fileID);
 
-            disp(['    Certificate worte to ' MBBAPI.certificateOutputPath '\' MBBAPI.certificateName]);
+            disp(['    Certificate worte to ' certificateOutputPath '\' certificateName]);
         end
     end
 end
