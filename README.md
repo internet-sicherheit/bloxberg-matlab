@@ -2,8 +2,10 @@
 
 ## Description
 
-This is a Matlab API to certify and verify reseach data with
-the Bloxberg Network.
+This is a Proof of Concept to certify and verify Matlab reseach data with
+the Bloxberg Network. This API can be used to verify the existence
+of a certain file in a specific point of time without sharing the file
+or its content itself.
 
 ## Usage
 
