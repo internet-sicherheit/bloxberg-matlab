@@ -12,12 +12,13 @@ the Bloxberg Network.
 First the user has to create an instance of the MatlabBloxbergAPI by
 calling on of the two constructor functions.
 
-**Exsample:**
+*Exsample:*
 ```
 MBB = MatlabBloxbergAPI('[AUTHORNAME]', [BUFFERSIZE]);
 
 MBB = MatlabBloxbergAPI('[AUTHORNAME]', [BUFFERSIZE], '[CERTIFYURL]', '[VERIFYURL]');
 ```
+The recommended [BUFFERSIZE] is 51200.
 The [CERTIFYURL] has to be https://certify.bloxberg.org/certifyData and 
 the [VERIFYURL] https://certify.bloxberg.org/generateCertificate to
 communicate with the Bloxberg Network.
@@ -27,7 +28,7 @@ communicate with the Bloxberg Network.
 After creating the instance of the API the user certifies the data by
 calling the certifyData function.
 
-**Exsample:**
+*Exsample:*
 ```
 MBB = certifyData(MBB, '[RESEARCHFILENAME]');
 ```
@@ -39,9 +40,17 @@ a .mat file.
 At least the user generates a certificate of the research data by calling
 the generateCertificate function.
 
-**Exsample:**
+*Exsample:*
 ```
 generateCertificate(MBB, '[CERTIFICATEOUTPUTPATH]', '[CERTIFICATEFILENAME]');
 ```
 The [CERTIFICATEOUTPUTPATH] specifies the path of the certificate
 and [CERTIFICATEFILENAME] is the name of the generated certificate.
+
+### Complete exsample
+
+```
+MBB = MatlabBloxbergAPI('Max Mustermann', 51200, 'https://certify.bloxberg.org/certifyData', 'https://certify.bloxberg.org/generateCertificate');
+MBB = certifyData(MBB, 'researchdata.mat');
+generateCertificate(MBB, 'C:\Users\Max\Desktop', 'mycertificate.pdf');
+```
